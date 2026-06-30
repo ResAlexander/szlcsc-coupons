@@ -42,8 +42,8 @@
 | `⏰ python coupons.py --max-age-hr 48` | 本地数据 48 小时内不提示更新 |
 
 ### 🎨 视觉反馈
-- 折扣率颜色编码：<span style="color:#00FF00">≥90%</span> · <span style="color:#00AA00">≥70%</span> · <span style="color:#FFD700">≥50%</span> · <span style="color:#00FFFF">≥30%</span>
-- 已领人数着色：<span style="color:#FF0000">≥1w 红</span> · <span style="color:#FFD700">≥1k 黄</span>
+- 折扣率颜色编码：![](https://img.shields.io/badge/≥90%25-brightgreen?style=flat-square) · ![](https://img.shields.io/badge/≥70%25-success?style=flat-square) · ![](https://img.shields.io/badge/≥50%25-yellow?style=flat-square) · ![](https://img.shields.io/badge/≥30%25-cyan?style=flat-square)
+- 已领人数着色：![](https://img.shields.io/badge/≥1w-red?style=flat-square) · ![](https://img.shields.io/badge/≥1k-yellow?style=flat-square)
 - 加载动画 + 格式化表格
 
 ---
