@@ -20,7 +20,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 _UNLIMITED = object()  # sentinel for --combo without budget
 
 # 请求间隔限制（秒），防止频繁调用 API
