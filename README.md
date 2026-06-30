@@ -14,12 +14,12 @@
 
 ## 🎯 为什么需要这个工具？
 
-立创商城（szlcsc.com）每单最多可叠加 **10 张优惠券**。品牌推广区的券大多是 **满16减15**，即花 ¥16 买元件，券抵扣 ¥15，实付 ¥1。
+立创商城（szlcsc.com）每单（指绑定订单，不算首单的话）最多可叠加 **10 张优惠券**。品牌推广区的券大多为 **满16减15**，即花 ¥16 买元件，券抵扣 ¥15，实付 ¥1。
 
 > [!TIP]
 > **理论上**：领 10 张品牌券 → 买 ¥160 的元件 → 用券抵扣 ¥150 → **实付 ¥10**。
 
-但品牌推广区有 **550+ 张券**，手动翻页对比太慢。这个工具帮你一键分析哪些券最值、怎么组合最省。
+但品牌推广区有 **550+ 张券**，如果手动翻页对比太慢。这个工具可以帮助快速分析和浏览优惠券，帮你发现哪些券最值、怎么组合最省。
 
 ---
 
@@ -44,22 +44,9 @@
 ### 🎨 视觉反馈
 - 折扣率颜色编码：![](https://img.shields.io/badge/≥90%25-brightgreen?style=flat-square) · ![](https://img.shields.io/badge/≥70%25-success?style=flat-square) · ![](https://img.shields.io/badge/≥50%25-yellow?style=flat-square) · ![](https://img.shields.io/badge/≥30%25-cyan?style=flat-square)
 - 已领人数着色：![](https://img.shields.io/badge/≥1w-red?style=flat-square) · ![](https://img.shields.io/badge/≥1k-yellow?style=flat-square)
-- 加载动画 + 格式化表格
+- 分类 + 格式化表格
 
 ---
-
-## 🔄 数据流
-
-```mermaid
-flowchart LR
-    A["szlcsc.com API<br/>(activity.szlcsc.com)"] -->|"--refresh"| B["latest_data.json<br/>(仓库跟踪，git pull 可获取)"]
-    B --> C["你本地<br/>python coupons.py"]
-    C -->|"--refresh"| A
-```
-
-> [!NOTE]
-> 用户运行时，默认读取仓库里的 `latest_data.json`。如果超过 24 小时未更新，程序会询问是否 `git pull` 拉取最新数据。<br>
-> 不论时间多久，`--refresh` 直接从 szlcsc API 拉最新数据并写入本地。
 
 ## 🚀 快速开始
 
@@ -74,6 +61,20 @@ pip install rich
 # 3. 运行（首次会自动拉取数据）
 python coupons.py
 ```
+
+
+## 🔄 数据流
+
+```mermaid
+flowchart LR
+    A["szlcsc.com API<br/>(activity.szlcsc.com)"] -->|"--refresh"| B["latest_data.json<br/>(仓库跟踪，git pull 可获取)"]
+    B --> C["你本地<br/>python coupons.py"]
+    C -->|"--refresh"| A
+```
+
+> [!NOTE]
+> 用户运行时，默认读取仓库里的 `latest_data.json`。如果超过 24 小时未更新，程序会询问是否 `git pull` 拉取最新数据。<br>
+> 不论时间多久，`--refresh` 直接从 szlcsc API 拉最新数据并写入本地。
 
 ---
 
