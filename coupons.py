@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-立创商城优惠券助手 — LCSC Coupon Helper
+立创商城优惠券数据浏览工具 — LCSC Coupon Data Viewer
 
-从 activity.szlcsc.com 获取全部优惠券数据，按专区分组
-输出美观的终端表格，支持排序、筛选、组合分析等。
+从 activity.szlcsc.com 公开 API 获取优惠券数据，按专区分组展示。
+仅供学习研究使用。
 """
 
 import argparse
@@ -22,6 +22,9 @@ from typing import Any
 
 __version__ = "1.0.0"
 _UNLIMITED = object()  # sentinel for --combo without budget
+
+# 请求间隔限制（秒），防止频繁调用 API
+_MIN_REFRESH_INTERVAL = 600  # 10 分钟
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(HERE, "latest_data.json")
@@ -66,7 +69,16 @@ except ImportError:
 
 # ── 数据获取 ──────────────────────────────────────────────────
 def fetch_coupons(max_retries: int = 3) -> dict[str, Any]:
-    """调用 API 获取全部优惠券数据（带自动重试）"""
+    """调用 API 获取全部优惠券数据（带自动重试、请求间隔限制）"""
+    # 检查请求间隔
+    _last_fetch = getattr(fetch_coupons, "_last_ts", 0)
+    since_last = time.time() - _last_fetch
+    if since_last < _MIN_REFRESH_INTERVAL:
+        wait = _MIN_REFRESH_INTERVAL - since_last
+        console.print(
+            f"[yellow]⚠ 请求过于频繁，请等待 {wait:.0f}s 后重试。[/]"
+        )
+        raise RuntimeError(f"请求间隔限制: 每 {_MIN_REFRESH_INTERVAL}s 最多一次")
     ctx = ssl.create_default_context()
     last_exc = None
     for attempt in range(max_retries):
@@ -80,6 +92,7 @@ def fetch_coupons(max_retries: int = 3) -> dict[str, Any]:
                 "Referer": "https://www.szlcsc.com/huodong.html",
             })
             with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
+                fetch_coupons._last_ts = time.time()  # type: ignore[attr-defined]
                 return json.loads(resp.read().decode("utf-8"))
         except (urllib.error.URLError, OSError, json.JSONDecodeError) as exc:
             last_exc = exc
@@ -142,7 +155,7 @@ def load_coupons(
        b. N → 继续用旧文件
     5. DATA_FILE 不存在 → 直打 API
     """
-    # ── 1. 强制刷新 ──
+    # ── 1. 直打 API（--refresh）──
     if refresh:
         console.print("[dim]来源: 立创 API (--refresh)[/]")
         data = fetch_coupons()
@@ -505,7 +518,7 @@ def print_combo_analysis(
     multiplier = total_threshold / actual_pay
 
     table = Table(
-        title=f"[bold]💰 最优 {coupon_count} 张商品券叠加分析[/]",
+        title=f"[bold]💰 {coupon_count} 张商品券叠加模拟（理论值）[/]",
         box=ROUNDED,
         title_style="bold #199FE9",
         border_style="#56657F",
@@ -535,8 +548,8 @@ def print_combo_analysis(
         f"[bold]商品总价值[/]: [green]¥{total_threshold:,.0f}[/]\n"
         f"[bold]券抵扣总额 (上限门槛)[/]: [bright_yellow]¥{total_amount:,.0f}[/]\n"
         f"[bold]实际需支付[/]: [bold green]¥{actual_pay:,.0f}[/]\n"
-        f"[bold]购买力倍率[/]: [bold bright_red]{multiplier:.1f}x[/]  "
-        f"(花 ¥1 买 ¥{multiplier:.1f} 的元件)\n"
+        f"[bold]理论购买力倍率[/]: [bold bright_red]{multiplier:.1f}x[/]  "
+        f"(付 ¥1 约抵 ¥{multiplier:.1f} 的元件价值，仅理论估算)\n"
     )
 
     if budget:
@@ -775,7 +788,7 @@ def print_summary_stats(all_coupons: list[dict[str, Any]]):
 # ── 主入口 ──────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(
-        description="立创商城优惠券助手 — 自动获取全部优惠券并展示",
+        description="立创商城优惠券数据浏览与比较工具",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 示例:
@@ -784,10 +797,10 @@ def main():
   python coupons.py --sort rate               # 按折扣率排序
   python coupons.py --min-rate 80             # 只看 80%% 以上折扣
   python coupons.py --brand 捷而瑞             # 只看某个品牌
-  python coupons.py --combo                   # [实验性] 10 张券叠加分析
+  python coupons.py --combo                   # [实验性] 10 张券叠加模拟
   python coupons.py --diff                    # 与上次对比变化
   python coupons.py --export data.csv         # 导出 CSV
-  python coupons.py --refresh                 # 强制从立创 API 拉取最新数据
+  python coupons.py --refresh                 # 从立创 API 拉取最新数据
   python coupons.py --max-age-hr 48           # 48 小时内不提示更新
         """,
     )
@@ -800,7 +813,7 @@ def main():
     parser.add_argument("--section", type=str, default=None,
                         help="只显示指定专区 (id 或名称关键词)")
     parser.add_argument("--combo", type=float, nargs="?", const=_UNLIMITED, default=None,
-                        help="[实验性] 最优 N 张券叠加分析 (可选预算金额，如 --combo 100)")
+                        help="[实验性] N 张券叠加模拟（可选预算金额，如 --combo 100）")
     parser.add_argument("--diff", action="store_true",
                         help="与上次运行对比变化")
     parser.add_argument("--export", type=str, default=None, metavar="FILE",
@@ -808,7 +821,7 @@ def main():
     parser.add_argument("--no-cache", action="store_true",
                         help="忽略 5 分钟临时缓存")
     parser.add_argument("--refresh", action="store_true",
-                        help="忽略所有缓存，强制从立创 API 拉取")
+                        help="忽略缓存，从立创 API 拉取最新数据")
     parser.add_argument("--max-age-hr", type=float, default=24,
                         help="本地数据过期阈值（小时），默认 24")
     parser.add_argument("--top", type=int, nargs="?", const=20, default=None,
@@ -846,10 +859,25 @@ def main():
         console.print("[red]❌ 未获取到优惠券数据，请稍后重试。[/]")
         sys.exit(1)
 
+    # ── 免责声明 ──
+    console.print()
+    console.print(Panel(
+        "[bold yellow]⚠ 第三方工具声明[/]\n"
+        "本工具是个人开发的立创商城优惠券数据分析工具，与立创商城（szlcsc.com）无任何关联。\n"
+        "数据来源于 activity.szlcsc.com 公开 API。\n"
+        "\n"
+        "推荐个人电子爱好者为学习研究使用。\n"
+        "不推荐集体/公司/组织使用——小额券对组织价值不大，大额券价格亦常高于其他渠道。\n"
+        "\n"
+        "请遵守立创商城服务条款，合理控制请求频率。",
+        border_style="yellow",
+        padding=(1, 2),
+    ))
+
     # ── 欢迎 ──
     dt = datetime.now().strftime("%Y-%m-%d %H:%M")
     header = Panel(
-        f"[bold white]📋 立创商城优惠券总览[/]    "
+        f"[bold white]📋 立创商城优惠券数据浏览[/]    "
         f"[dim]{len(all_coupons)} 张券 | {dt}[/]",
         border_style="#199FE9",
         padding=(1, 2),
