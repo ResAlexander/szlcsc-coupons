@@ -796,7 +796,7 @@ def main():
   python coupons.py --stats                  # 汇总统计
   python coupons.py --sort rate               # 按折扣率排序
   python coupons.py --min-rate 80             # 只看 80%% 以上折扣
-  python coupons.py --brand 捷而瑞             # 只看某个品牌
+  python coupons.py --brand 捷而瑞             # 按品牌名搜索（支持部分匹配），仅显示该品牌
   python coupons.py --combo                   # [实验性] 10 张券叠加模拟
   python coupons.py --diff                    # 与上次对比变化
   python coupons.py --export data.csv         # 导出 CSV
@@ -809,7 +809,7 @@ def main():
     parser.add_argument("--min-rate", type=float, default=0,
                         help="最低折扣率筛选 (如 80 表示 80%% 以上)")
     parser.add_argument("--brand", type=str, default=None,
-                        help="按品牌/关键词筛选")
+                        help="按品牌名搜索（支持部分名称匹配），仅显示匹配该品牌的券")
     parser.add_argument("--section", type=str, default=None,
                         help="只显示指定专区 (id 或名称关键词)")
     parser.add_argument("--combo", type=float, nargs="?", const=_UNLIMITED, default=None,
@@ -935,7 +935,7 @@ def main():
     else:
         print_all_sections(groups, args.sort, args.min_rate, args.brand)
 
-        if args.min_rate == 0:
+        if args.min_rate == 0 and args.brand is None:
             console.print()
             console.print("─" * console.width)
             print_best_value_ranking(all_coupons, top_n=20)

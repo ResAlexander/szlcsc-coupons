@@ -40,7 +40,7 @@
 | `▶️ python coupons.py` | 默认模式 — 7 个专区分区展示 + 折扣率排行榜 |
 | `📊 python coupons.py --sort rate` | 按折扣率排序（满16减15 → 93.8% 排最前） |
 | `🔍 python coupons.py --min-rate 80` | 只看折扣率 ≥ 80% 的高折扣券 |
-| `🏷️ python coupons.py --brand [品牌名称]` | 筛选指定品牌/关键词 |
+| `🏷️ python coupons.py --brand [关键词]` | 按品牌名搜索（支持部分名称匹配），仅显示该品牌 |
 | `📂 python coupons.py --section 2` | 只看某个专区（品牌推广、工业品等） |
 | `🧪 python coupons.py --combo` | 10 张券叠加模拟 — 估算理论购买力 <br><i style="color:darkred">[实验性]</i> |
 | `🧪 python coupons.py --combo 100` | 带预算模拟（¥100 预算能买多少？） <br><i style="color:darkred">[实验性]</i> |
