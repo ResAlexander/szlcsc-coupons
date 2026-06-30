@@ -634,7 +634,7 @@ def print_diff(coupons: list[dict[str, Any]]):
         t.add_column("原先", justify="right", width=10)
         t.add_column("现在", justify="right", width=10)
         t.add_column("变化", justify="right", width=10)
-        for c, old_r, new_r in sorted(changed, key=lambda x: -(x[2] - x[1]))[:20]:
+        for c, old_r, new_r in sorted(changed, key=lambda x: -(x[2] - x[1])):
             diff = new_r - old_r
             diff_str = (
                 Text(f"+{diff:,}", style="green")
