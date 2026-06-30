@@ -1,0 +1,24 @@
+# Cache
+.coupon_cache.json
+
+# Exports (但保留仓库跟踪的 data.csv)
+*.csv
+!data.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
