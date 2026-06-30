@@ -17,6 +17,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Ignore files prefixed with gitignore_
+gitignore_*
+
 # IDE
 .vscode/
 .idea/

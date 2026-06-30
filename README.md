@@ -1,6 +1,6 @@
 # szlcsc-coupons · 立创商城优惠券助手
 
-> 终端里的立创商城领券神器 — 专为电子爱好者打造的优惠券组合分析工具
+> 终端里的立创商城领券神器 — 专为电子爱好者打造的优惠券分析工具
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-199FE9)
 ![Rich](https://img.shields.io/badge/Rich-CLI%20UI-199FE9)
@@ -28,8 +28,8 @@
 | `python coupons.py --min-rate 80` | 只看折扣率 ≥ 80% 的黄金券 |
 | `python coupons.py --brand 捷而瑞` | 筛选指定品牌/关键词 |
 | `python coupons.py --section 2` | 只看某个专区（品牌推广、工业品等） |
-| `python coupons.py --combo` | **10 张券叠加分析** — 算购买力倍率 |
-| `python coupons.py --combo 100` | 带预算模拟（¥100 预算能买多少？） |
+| `python coupons.py --combo` | [experimental]<br>10 张券叠加分析 — 算购买力倍率 |
+| `python coupons.py --combo 100` | [experimental]<br>带预算模拟（¥100 预算能买多少？） |
 | `python coupons.py --stats` | 汇总统计（券总数、有效期、类型分布） |
 | `python coupons.py --diff` | 对比上次运行，看新增/下架/数量波动 |
 | `python coupons.py --export data.csv` | 导出全部数据为 CSV |
@@ -64,7 +64,7 @@
 
 用户运行时，默认读取仓库里的 `latest_data.json`。如果超过 24 小时未更新，程序会询问是否 `git pull` 拉取最新数据。
 
-不想交互、或想跳过等待？`--refresh` 直接从 szlcsc API 拉最新数据并写入本地。
+不论时间多久，`--refresh` 直接从 szlcsc API 拉最新数据并写入本地。
 
 ## 快速开始
 
@@ -102,7 +102,9 @@ python coupons.py --sort rate --top 30
 python coupons.py --min-rate 80
 ```
 
-### 10 张券叠加分析
+### ⚠️ 10 张券叠加分析 [实验性]
+
+> **实验性功能**：叠加逻辑尚未考虑品牌互斥、券类型互斥等规则，结果仅供参考。
 
 ```bash
 # 自动找最优 10 张券，算购买力
@@ -138,24 +140,6 @@ python coupons.py --diff
 
 显示新增券、已下架券、已领数量的环比变化。适合每天跑一次，发现新羊毛。
 
----
-
-## 与同类项目对比
-
-| 特性 | szlcsc-help (xiaowine) | **szlcsc-coupons (本工具)** |
-|---|---|---|
-| 形态 | Vue 3 网页 | **终端 CLI** |
-| 7 个专区分区 | ❌ 品牌券混排 | **✅ 分 7 区展示** |
-| 折扣率计算 | ❌ | **✅ 自动算 + 着色** |
-| 10 张券叠加分析 | ❌ | **✅ 独有** |
-| 购买力倍率 | ❌ | **✅ 独有** |
-| 预算模拟 | ❌ | **✅ 独有** |
-| 变化检测 | ❌ | **✅ --diff** |
-| CSV 导出 | ❌ | **✅** |
-| 移动端适配 | ✅ | ❌ |
-| 自动更新 | ✅ Actions | ❌ 手动运行 |
-
-本工具的特色在于**组合优化**：szlcsc-help 帮你筛选品牌券，本工具告诉你**怎么用最划算**。
 
 ---
 
@@ -179,12 +163,13 @@ python coupons.py --diff
 **推荐策略**：
 
 1. 用 `--min-rate 90` 筛选出满16减15/满21减20 这类高折扣券
-2. 用 `--combo` 看 10 张叠加效果
+2. 用 `--combo` 看 10 张叠加效果 [experimental]
 3. 避开门槛过高（满500减50 实际折扣率 10%）的券
-4. 每天跑一遍 `--diff`，发现新的高折扣券
+4. 跑一遍 `--diff`，查看新的优惠券
 
 ---
 
 ## 协议
 
-MIT
+MIT License<br>
+（详见 `LICENSE` 文件）

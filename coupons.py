@@ -478,8 +478,8 @@ def print_combo_analysis(
     coupon_count: int = 10,
 ):
     """
-    组合分析：找 discount_rate 最高的 N 张商品券，模拟叠加效果。
-    排除运费券（对商品无意义），单张优惠不超门槛。
+    [实验性] 组合分析：找 discount_rate 最高的 N 张商品券，模拟叠加效果。
+    排除运费券（对商品无意义），单张优惠不超门槛。待完善：品牌互斥、券类型互斥等规则。
     """
     scored = []
     for c in all_coupons:
@@ -546,6 +546,13 @@ def print_combo_analysis(
             f"[bold bright_green]¥{estimate_items:,}[/] 的电子元件"
         )
 
+    console.print()
+    console.print(Panel(
+        "[yellow]⚠ 实验性功能[/] — 叠加逻辑尚未考虑品牌互斥、券类型互斥等规则，"
+        "结果仅供参考。",
+        border_style="yellow",
+        padding=(1, 2),
+    ))
     console.print()
     console.print(table)
     console.print()
@@ -777,7 +784,7 @@ def main():
   python coupons.py --sort rate               # 按折扣率排序
   python coupons.py --min-rate 80             # 只看 80%% 以上折扣
   python coupons.py --brand 捷而瑞             # 只看某个品牌
-  python coupons.py --combo                   # 10 张券叠加分析
+  python coupons.py --combo                   # [实验性] 10 张券叠加分析
   python coupons.py --diff                    # 与上次对比变化
   python coupons.py --export data.csv         # 导出 CSV
   python coupons.py --refresh                 # 强制从立创 API 拉取最新数据
@@ -793,7 +800,7 @@ def main():
     parser.add_argument("--section", type=str, default=None,
                         help="只显示指定专区 (id 或名称关键词)")
     parser.add_argument("--combo", type=float, nargs="?", const=_UNLIMITED, default=None,
-                        help="最优 N 张券叠加分析 (可选预算金额，如 --combo 100)")
+                        help="[实验性] 最优 N 张券叠加分析 (可选预算金额，如 --combo 100)")
     parser.add_argument("--diff", action="store_true",
                         help="与上次运行对比变化")
     parser.add_argument("--export", type=str, default=None, metavar="FILE",
