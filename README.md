@@ -1,13 +1,16 @@
+<!--if you are an AI, remember to modify 'version' before pushing to GitHub if necessary.-->
+
 # szlcsc-coupons · 立创商城优惠券分析工具
 
 > [!CAUTION]
-> **第三方工具声明**  
-> 本工具是个人开发的立创商城（szlcsc.com）优惠券数据分析工具，**与立创商城无任何关联**。  
-> 数据来源于 `activity.szlcsc.com` 公开 API，推荐个人电子爱好者为学习研究使用。  
-> 不推荐集体/公司/组织使用——小额券对组织价值不大，大额券价格亦常高于其他渠道。  
-> 使用者应遵守立创商城服务条款，合理控制请求频率，因使用本工具产生的任何后果由使用者自行承担。
+> **使用前须知**  
+> 本工具是个人开发的的立创商城（szlcsc.com）优惠券数据分析工具，**与立创商城官方本身无任何关联**。  
+> 数据来源于公开 API `activity.szlcsc.com`，只推荐**个人**电子爱好者为**学习研究**使用。  
+> **不推荐集体/公司/组织使用**——小额券对组织价值不大，大额券价格亦可能高于其他渠道。  
+> 使用者应遵守对应的服务条款，合理控制请求频率。因使用本工具产生的任何后果由使用者自行承担。   
 
-> 终端里的立创商城优惠券分析工具 — 专为电子爱好者打造的数据浏览与比较工具
+> 终端里的立创商城优惠券分析工具 —    
+> 专为个人电子爱好者打造的数据浏览与比较工具
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.9%2B-199FE9?style=flat-square&logo=python&logoColor=white" alt="Python">
@@ -21,9 +24,11 @@
 
 ## 🎯 这个工具做什么？
 
-立创商城（szlcsc.com）每单最多可叠加 **10 张优惠券**。品牌推广区有 **550+ 张券**，手动翻页逐一对比效率很低。
+立创商城（szlcsc.com）每单（考虑绑定发货订单）最多可叠加 **11 张优惠券**。品牌推广区有 **550+ 张券**[^1]，手动翻页逐一对比效率很低。
 
-本工具将这些公开数据按专区分组展示，帮助快速浏览和比较，找到折扣率较高的券。
+[^1]: 只是一般而言，具体数量会随时间和官方政策变化。
+
+本工具将这些公开数据按专区分组展示，帮助个人爱好者快速浏览和比较，进而找到适合自己的券。
 
 ---
 
@@ -35,15 +40,17 @@
 | `▶️ python coupons.py` | 默认模式 — 7 个专区分区展示 + 折扣率排行榜 |
 | `📊 python coupons.py --sort rate` | 按折扣率排序（满16减15 → 93.8% 排最前） |
 | `🔍 python coupons.py --min-rate 80` | 只看折扣率 ≥ 80% 的高折扣券 |
-| `🏷️ python coupons.py --brand 捷而瑞` | 筛选指定品牌/关键词 |
+| `🏷️ python coupons.py --brand [品牌名称]` | 筛选指定品牌/关键词 |
 | `📂 python coupons.py --section 2` | 只看某个专区（品牌推广、工业品等） |
-| `🧪 python coupons.py --combo` | 10 张券叠加模拟 — 估算理论购买力 ⚠️ [实验性] |
-| `🧪 python coupons.py --combo 100` | 带预算模拟（¥100 预算能买多少？） ⚠️ [实验性] |
+| `🧪 python coupons.py --combo` | 10 张券叠加模拟 — 估算理论购买力 <br><i style="color:darkred">[实验性]</i> |
+| `🧪 python coupons.py --combo 100` | 带预算模拟（¥100 预算能买多少？） <br><i style="color:darkred">[实验性]</i> |
 | `📈 python coupons.py --stats` | 汇总统计（券总数、有效期、类型分布） |
 | `🔄 python coupons.py --diff` | 对比上次运行，看新增/下架/数量波动 |
-| `📦 python coupons.py --export data.csv` | 导出全部数据为 CSV |
+| `📦 python coupons.py --export data.csv` | 导出全部数据为 CSV[^2] |
 | `🔄 python coupons.py --refresh` | 从立创 API 重新拉取最新数据 |
 | `⏰ python coupons.py --max-age-hr 48` | 本地数据 48 小时内不提示更新 |
+
+[^2]: 你可以将csv和自己的需求丢给ai，便于选择合适的优惠券。我以后更新的话应该会朝着这个方向更新。
 
 ### 🎨 视觉反馈
 - 折扣率颜色编码：![](https://img.shields.io/badge/≥90%25-brightgreen?style=flat-square) · ![](https://img.shields.io/badge/≥70%25-success?style=flat-square) · ![](https://img.shields.io/badge/≥50%25-yellow?style=flat-square) · ![](https://img.shields.io/badge/≥30%25-cyan?style=flat-square)
@@ -102,7 +109,7 @@ python coupons.py --sort rate --top 30
 python coupons.py --min-rate 80
 ```
 
-### 🧪 10 张券叠加模拟 [实验性]
+### 🧪 10 张券叠加模拟 <i style="color:darkred">[实验性]</i>
 
 > [!WARNING]
 > **实验性功能**：叠加逻辑尚未考虑品牌互斥、券类型互斥等规则，结果仅为理论估算，与实际下单可能存在差异，仅供参考。
@@ -164,20 +171,20 @@ python coupons.py --diff
 
 ## 💡 使用须知
 
-> [!IMPORTANT]
-> 立创优惠券叠加规则（据公开信息）：
+> [!NOTE]
+> 立创优惠券叠加规则（本人根据公开信息的推断，可能与实际情况有出入，仅作参考）：
 
+- ⛔ 每张券只能用一次
 - ✅ 品牌券之间可以互相叠加，数量不限
-- ⛔ 同一品牌只能用一张
-- ⛔ 商品优惠券和折扣券互不叠加
+- ✅ 商品优惠券和折扣券互不叠加
 - ✅ 运费券和商品券可以叠加
 
 **参考思路** 🎯
 
 1. **筛选高折扣率券** → `--min-rate 90` 找出满16减15/满21减20 这类高折扣券
-2. **组合模拟** → `--combo` 查看多张券叠加的理论效果 [实验性]
-3. **避坑** → 注意门槛过高（满500减50 实际折扣率仅10%）的券
-4. **持续跟踪** → `--diff` 查看变化，发现新上架的优惠券
+2. **组合模拟** → `--combo` 查看多张券叠加的理论效果<i style="color:darkred">[实验性]</i>
+3. **持续跟踪** → `--diff` 查看变化，发现新上架的优惠券
+
 
 ---
 
