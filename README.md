@@ -47,7 +47,12 @@
 | `📈 python coupons.py --stats` | 汇总统计（券总数、有效期、类型分布） |
 | `🔄 python coupons.py --diff` | 对比上次运行，看新增/下架/数量波动 |
 | `📦 python coupons.py --export data.csv` | 导出全部数据为 CSV[^2] |
+| `📦 python coupons.py --export-json data.json` | 导出全部数据为 JSON |
+| `📦 python coupons.py --export-markdown data.md` | 导出折扣率排行前 50 为 Markdown 表格 |
 | `🔄 python coupons.py --refresh` | 从立创 API 重新拉取最新数据 |
+| `🔄 python coupons.py --refresh --yes` | 非交互式刷新（用于 CI 定时任务） |
+| `🤫 python coupons.py --quiet` | 静默模式，不打印欢迎头、免责声明、底部提示 |
+| `🔇 python coupons.py -q` | `--quiet` 的短选项 |
 | `⏰ python coupons.py --max-age-hr 48` | 本地数据 48 小时内不提示更新 |
 
 [^2]: 你可以将csv和自己的需求丢给ai，便于选择合适的优惠券。我以后更新的话应该会朝着这个方向更新。

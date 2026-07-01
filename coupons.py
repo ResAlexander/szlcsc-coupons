@@ -6,6 +6,18 @@
 仅供学习研究使用。
 """
 
+# ═══════════════════════════════════════════════════════════════╗
+# 目录索引                                                      ║
+# ═══════════════════════════════════════════════════════════════╝
+#   Constants & Config             第35行
+#   Rich Import & Fallback         第58行
+#   Data Fetching                  第84行
+#   Data Parsing                   第242行
+#   Terminal Output (Rich)         第316行
+#   Export Functions               第679行
+#   Main Entry                     第856行
+# ═══════════════════════════════════════════════════════════════
+
 import argparse
 import csv
 import json
@@ -20,11 +32,12 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-__version__ = "1.0.2"
-_UNLIMITED = object()  # sentinel for --combo without budget
+__version__ = "1.1.0"
+_UNLIMITED = object()
+_NON_INTERACTIVE = False
+_QUIET = False
 
-# 请求间隔限制（秒），防止频繁调用 API
-_MIN_REFRESH_INTERVAL = 600  # 10 分钟
+_MIN_REFRESH_INTERVAL = 600
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(HERE, "latest_data.json")
@@ -33,7 +46,7 @@ HISTORY_FILE = os.path.join(HERE, ".coupon_history.json")
 
 API_URL = "https://activity.szlcsc.com/activity/coupon"
 
-SECTION_NAMES: dict[int | str, str] = {
+_SECTION_NAMES: dict[int | str, str] = {
     1:  "综合专区",
     2:  "品牌推广专区",
     3:  "超级品牌周",
@@ -43,7 +56,58 @@ SECTION_NAMES: dict[int | str, str] = {
     13: "面板定制 & 移动端",
 }
 
-# ── rich 导入及降级 ──────────────────────────────────────────
+
+def get_section_name(
+    section_id: int | str,
+    samples: list[dict[str, Any]] | None = None,
+) -> str:
+    known = _SECTION_NAMES.get(section_id)
+    if known is not None:
+        return known
+    if samples:
+        activity = samples[0].get("couponActivityName", "")
+        if activity:
+            clean = _strip_date_prefix(activity)
+            if clean:
+                return clean
+    return f"专区 {section_id}"
+
+
+def _strip_date_prefix(name: str) -> str:
+    """去掉 couponActivityName 中的日期前缀，保留专区名称"""
+    # 如果包含分隔符（如 "9.9免邮活动丨26年7月"），取非日期那半
+    for sep in ("丨", "|", "—", "‐"):
+        if sep in name:
+            a, b = (p.strip() for p in name.split(sep, 1))
+            a_is_date = all(ch in "0123456789年月日 " for ch in a)
+            b_is_date = all(ch in "0123456789年月日 " for ch in b)
+            if a_is_date and not b_is_date:
+                return b
+            if b_is_date and not a_is_date:
+                return a
+            return a  # 无法判断返回前半
+    # 去掉开头的日期前缀
+    import re
+    cleaned = re.sub(
+        r"^\d{2,4}年\d{1,2}月\d{0,2}日?", "", name
+    ).strip()
+    cleaned = re.sub(r"^\d{1,2}月\d{0,2}日?", "", cleaned).strip()
+    if cleaned:
+        return cleaned
+    return name
+
+
+def get_all_section_names(groups: dict) -> dict[int | str, str]:
+    """从 groups 数据构建完整的专区名称映射（含 API 动态推导的名称）"""
+    result: dict[int | str, str] = dict(_SECTION_NAMES)
+    for sec_id, clist in groups.items():
+        if sec_id not in result:
+            result[sec_id] = get_section_name(sec_id, samples=clist)
+    return result
+
+# ═══════════════════════════════════════════════════════════════
+# Rich 导入及降级
+# ═══════════════════════════════════════════════════════════════
 try:
     from rich import print as rprint
     from rich.console import Console
@@ -60,6 +124,8 @@ except ImportError:
     _HAS_RICH = False
 
     class Console:
+        width = 80
+
         @staticmethod
         def print(*a, **kw):
             print(*a)
@@ -67,7 +133,9 @@ except ImportError:
     console = Console()
 
 
-# ── 数据获取 ──────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# 数据获取
+# ═══════════════════════════════════════════════════════════════
 def fetch_coupons(max_retries: int = 3) -> dict[str, Any]:
     """调用 API 获取全部优惠券数据（带自动重试、请求间隔限制）"""
     # 检查请求间隔
@@ -122,13 +190,20 @@ def _git_pull_data() -> bool:
             ["git", "pull", "--ff-only"],
             capture_output=True, text=True, timeout=30,
         )
+        if result.returncode != 0:
+            print(f"[_git_pull_data] git pull 失败: {result.stderr.strip()}", file=sys.stderr)
         return result.returncode == 0
-    except Exception:
+    except Exception as e:
+        print(f"[_git_pull_data] git pull 异常: {e}", file=sys.stderr)
         return False
 
 
 def _ask_yes_no(prompt: str, default_yes: bool = True) -> bool:
-    """交互式询问 Y/N，非交互环境返回 default_yes"""
+    """交互式询问 Y/N，非交互环境返回 False"""
+    if _NON_INTERACTIVE:
+        return False
+    if not sys.stdin.isatty():
+        return False
     try:
         suffix = " [Y/N]: " if default_yes else " [y/N]: "
         answer = input(prompt + suffix).strip().lower()
@@ -136,7 +211,7 @@ def _ask_yes_no(prompt: str, default_yes: bool = True) -> bool:
             return answer in ("", "y", "yes")
         return answer in ("y", "yes")
     except (EOFError, OSError):
-        return default_yes
+        return False
 
 
 def load_coupons(
@@ -157,7 +232,8 @@ def load_coupons(
     """
     # ── 1. 直打 API（--refresh）──
     if refresh:
-        console.print("[dim]来源: 立创 API (--refresh)[/]")
+        if not _QUIET:
+            console.print("[dim]来源: 立创 API (--refresh)[/]")
         data = fetch_coupons()
         _save_data_file(data)
         _save_cache(data)
@@ -167,7 +243,8 @@ def load_coupons(
     if use_cache and os.path.exists(CACHE_FILE):
         mtime = os.path.getmtime(CACHE_FILE)
         if time.time() - mtime < 300:
-            console.print("[dim]来源: 临时缓存 (5min)[/]")
+            if not _QUIET:
+                console.print("[dim]来源: 临时缓存 (5min)[/]")
             with open(CACHE_FILE) as f:
                 return json.load(f)
 
@@ -178,17 +255,25 @@ def load_coupons(
 
         if age_hr < max_age_hr:
             # 未过期
-            console.print(f"[dim]来源: 本地数据 ({age_hr:.1f}h 前更新)[/]")
+            if not _QUIET:
+                console.print(f"[dim]来源: 本地数据 ({age_hr:.1f}h 前更新)[/]")
             with open(DATA_FILE) as f:
                 return json.load(f)
 
-        # 已过期 → 询问
+        # 已过期
+        if _QUIET:
+            # 静默模式：跳过询问，直接使用旧数据
+            with open(DATA_FILE) as f:
+                return json.load(f)
+
+        # 过期 → 询问
         console.print(f"[yellow]本地数据已 {age_hr:.1f}h 未更新（阈值 {max_age_hr}h）[/]")
         if _ask_yes_no("是否从远程仓库拉取最新数据?"):
             if _git_pull_data() and os.path.exists(DATA_FILE):
                 new_age = time.time() - os.path.getmtime(DATA_FILE)
                 if new_age < age:  # 文件确有更新
-                    console.print("[dim]来源: git pull 远程仓库[/]")
+                    if not _QUIET:
+                        console.print("[dim]来源: git pull 远程仓库[/]")
                     with open(DATA_FILE) as f:
                         return json.load(f)
 
@@ -198,7 +283,8 @@ def load_coupons(
                 data = fetch_coupons()
                 _save_data_file(data)
                 _save_cache(data)
-                console.print("[dim]来源: 立创 API (git pull 失败后降级)[/]")
+                if not _QUIET:
+                    console.print("[dim]来源: 立创 API (git pull 失败后降级)[/]")
                 return data
             except Exception as exc:
                 console.print(f"[red]API 请求也失败: {exc}[/]")
@@ -207,23 +293,29 @@ def load_coupons(
                     return json.load(f)
 
         # 用户选 N
-        console.print("[dim]使用本地数据。[/]")
+        if not _QUIET:
+            console.print("[dim]使用本地数据。[/]")
         with open(DATA_FILE) as f:
             return json.load(f)
 
     # ── 5. DATA_FILE 不存在 → 直打 API ──
-    console.print("[dim]来源: 立创 API (无本地数据)[/]")
+    if not _QUIET:
+        console.print("[dim]来源: 立创 API (无本地数据)[/]")
     data = fetch_coupons()
     _save_data_file(data)
     _save_cache(data)
     return data
 
 
-# ── 数据处理 ──────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# 数据处理
+# ═══════════════════════════════════════════════════════════════
 def parse_coupons(data: dict[str, Any]) -> list[dict[str, Any]]:
     """拍平所有专区的优惠券，并清洗字段"""
     result = data.get("result", {})
     section_map = result.get("couponModelVOListMap", {})
+    if not isinstance(section_map, dict):
+        return []
     coupons: list[dict[str, Any]] = []
     for section_id, clist in section_map.items():
         for c in clist:
@@ -257,12 +349,11 @@ def format_amount(c: dict[str, Any]) -> str:
     """格式化金额/折扣信息"""
     ctype = c.get("couponType", "")
     if ctype == "discount":
-        disc = c.get("couponDiscount", 100) or 100
-        if disc > 10:
-            disc /= 10
-        elif 0 < disc <= 1:
-            disc *= 10
-        return f"{disc:.0f}折"
+        raw = c.get("couponDiscount")
+        if not raw:
+            return "-"
+        disc = raw if raw > 10 else raw * 10
+        return f"{disc / 10:.0f}折"
     amount = c.get("couponAmount")
     if amount and amount > 0:
         return f"¥{amount:.0f}"
@@ -270,7 +361,7 @@ def format_amount(c: dict[str, Any]) -> str:
 
 
 def classify_section(c: dict[str, Any]) -> int | str:
-    """返回所属专区的 key（用于分组），统一返回 int"""
+    """返回所属专区的 key（用于分组），优先用 frontPartition"""
     fp = c.get("frontPartition")
     sid = c.get("_section_id")
     if fp is not None:
@@ -291,7 +382,9 @@ def group_coupons(coupons: list[dict[str, Any]]) -> dict[int | str, list[dict[st
     return dict(groups)
 
 
-# ── 终端输出（Rich） ────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# 终端输出 (Rich)
+# ═══════════════════════════════════════════════════════════════
 def style_discount_rate(rate: float) -> Text:
     """折扣率样式"""
     if rate >= 90:
@@ -409,7 +502,7 @@ def print_all_sections(
         clist = groups.get(sec_id, [])
         if not clist:
             continue
-        name = SECTION_NAMES.get(sec_id, f"专区 {sec_id}")
+        name = get_section_name(sec_id, samples=clist)
         table = build_section_table(
             clist, name, sort_by, min_rate, brand_filter
         )
@@ -424,7 +517,7 @@ def print_all_sections(
     for sec_id in groups:
         if sec_id not in known:
             clist = groups[sec_id]
-            name = SECTION_NAMES.get(sec_id, f"专区 {sec_id}")
+            name = get_section_name(sec_id, samples=clist)
             table = build_section_table(clist, name, sort_by, min_rate, brand_filter)
             if table is not None:
                 if printed > 0:
@@ -436,10 +529,27 @@ def print_all_sections(
 def print_best_value_ranking(
     all_coupons: list[dict[str, Any]],
     top_n: int = 20,
+    min_rate: float = 0,
+    brand_filter: str | None = None,
 ):
     """打印折扣率最高的券（全局）"""
+    filtered = list(all_coupons)
+    if brand_filter:
+        keyword = brand_filter.lower()
+        filtered = [
+            c for c in filtered
+            if keyword in (c.get("couponName") or "").lower()
+            or keyword in (c.get("couponTypeName") or "").lower()
+            or keyword in (c.get("brandNames") or "").lower()
+        ]
+    if min_rate > 0:
+        filtered = [c for c in filtered if compute_discount_rate(c) >= min_rate]
+    if not filtered:
+        console.print("[yellow]⚠ 没有匹配条件的优惠券。[/]")
+        return
+
     scored = []
-    for c in all_coupons:
+    for c in filtered:
         rate = compute_discount_rate(c)
         received = c.get("receiveCustomerNum") or 0
         amount = c.get("couponAmount") or 0
@@ -470,7 +580,7 @@ def print_best_value_ranking(
         amount_str = format_amount(c)
         threshold_str = f"¥{threshold:.0f}" if threshold else "-"
         sid = classify_section(c)
-        sec_name = SECTION_NAMES.get(sid, f"专区 {sid}")
+        sec_name = get_section_name(sid)
         table.add_row(
             str(idx),
             name,
@@ -574,13 +684,20 @@ def print_combo_analysis(
 
 def print_diff(coupons: list[dict[str, Any]]):
     """对比上次运行结果，显示变化"""
-    if not os.path.exists(HISTORY_FILE):
-        console.print("[yellow]⚠ 没有历史数据，本次将作为基线保存。[/]")
+    try:
+        with open(HISTORY_FILE) as f:
+            old = json.load(f)
+    except FileNotFoundError:
+        console.print("[yellow]⚠ 首次运行，已保存当前数据作为基线。下次运行 --diff 将显示与基线之间的变化。[/]")
         _save_history(coupons)
         return
-
-    with open(HISTORY_FILE) as f:
-        old = json.load(f)
+    except json.JSONDecodeError:
+        console.print("[yellow]⚠ 历史数据损坏（JSON 解析失败），已重置基线。[/]")
+        _save_history(coupons)
+        return
+    except OSError as e:
+        console.print(f"[red]❌ 无法读取历史数据: {e}[/]")
+        sys.exit(1)
 
     old_map = {c["couponId"]: c for c in old if c.get("couponId")}
     new_map = {c["couponId"]: c for c in coupons if c.get("couponId")}
@@ -607,7 +724,7 @@ def print_diff(coupons: list[dict[str, Any]]):
         t.add_column("专区", width=16)
         for c in added:
             sid = classify_section(c)
-            sec_name = SECTION_NAMES.get(sid, f"专区 {sid}")
+            sec_name = get_section_name(sid)
             t.add_row(c.get("couponName", "-"), f"¥{c.get('couponAmount') or 0:.0f}", sec_name)
         console.print(t)
         console.print()
@@ -652,6 +769,11 @@ def print_diff(coupons: list[dict[str, Any]]):
     _save_history(coupons)
 
 
+# ═══════════════════════════════════════════════════════════════
+# 导出函数
+# ═══════════════════════════════════════════════════════════════
+
+
 def export_csv(coupons: list[dict[str, Any]], filepath: str):
     """导出全部数据为 CSV"""
     fieldnames = [
@@ -677,17 +799,59 @@ def export_csv(coupons: list[dict[str, Any]], filepath: str):
                 "customerMaxNum": c.get("customerMaxNum", ""),
                 "couponValidBeginTime": c.get("couponValidBeginTime", ""),
                 "couponValidEndTime": c.get("couponValidEndTime", ""),
-                "section": SECTION_NAMES.get(classify_section(c), ""),
+                "section": get_section_name(classify_section(c)),
                 "frontPartition": c.get("frontPartition", ""),
             }
             writer.writerow(row)
     console.print(f"[green]✅ 已导出 {len(coupons)} 条数据到 [bold]{filepath}[/][/]")
 
 
+def export_json(coupons: list[dict[str, Any]], filepath: str):
+    """导出全部数据为 JSON"""
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(coupons, f, ensure_ascii=False, indent=2)
+    console.print(f"[green]✅ 已导出 {len(coupons)} 条数据到 [bold]{filepath}[/][/]")
+
+
+def export_markdown(coupons: list[dict[str, Any]], filepath: str):
+    """导出折扣率排行前50为 Markdown 表格"""
+    scored = []
+    for c in coupons:
+        rate = compute_discount_rate(c)
+        received = c.get("receiveCustomerNum") or 0
+        scored.append((rate, received, c))
+    scored.sort(key=lambda x: (-x[0], -x[1]))
+
+    lines = [
+        "# 立创商城优惠券列表",
+        "",
+        f"共 {len(coupons)} 张券，以下为折扣率排行前 50：",
+        "",
+        "| # | 优惠券名称 | 折扣率 | 已领 | 门槛 | 面额 | 类型 |",
+        "|---|-----------|--------|------|------|------|------|",
+    ]
+    for idx, (rate, received, c) in enumerate(scored[:50], 1):
+        name = c.get("couponName", "-")
+        amount = c.get("couponAmount") or 0
+        threshold = c.get("minOrderMoney") or 0
+        threshold_str = f"¥{threshold:.0f}" if threshold else "-"
+        amount_str = f"¥{amount:.0f}" if amount else "-"
+        ctype = c.get("couponTypeName", c.get("couponType", "-"))
+        lines.append(f"| {idx} | {name} | {rate:.1f}% | {received:,} | {threshold_str} | {amount_str} | {ctype} |")
+
+    text = "\n".join(lines)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(text)
+    console.print(f"[green]✅ 已导出 {len(coupons)} 条数据到 [bold]{filepath}[/][/]")
+
+
 def _save_history(coupons: list[dict[str, Any]]):
     """保存快照用于 diff"""
-    with open(HISTORY_FILE, "w") as f:
-        json.dump(coupons, f, ensure_ascii=False)
+    try:
+        with open(HISTORY_FILE, "w") as f:
+            json.dump(coupons, f, ensure_ascii=False)
+    except OSError as e:
+        console.print(f"[red]❌ 无法保存历史数据: {e}[/]")
 
 
 def print_summary_stats(all_coupons: list[dict[str, Any]]):
@@ -703,8 +867,6 @@ def print_summary_stats(all_coupons: list[dict[str, Any]]):
     total_discount_value = 0.0
     weighted_rate = 0.0
     type_counts: dict[str, int] = {}
-    section_counts: dict[str, int] = {}
-
     for c in all_coupons:
         received = c.get("receiveCustomerNum") or 0
         total_received += received
@@ -725,10 +887,6 @@ def print_summary_stats(all_coupons: list[dict[str, Any]]):
         }
         tname = type_name_map.get(raw_type, c.get("couponTypeName") or raw_type or "未知")
         type_counts[tname] = type_counts.get(tname, 0) + 1
-
-        sid = classify_section(c)
-        sname = SECTION_NAMES.get(sid, f"专区 {sid}")
-        section_counts[sname] = section_counts.get(sname, 0) + 1
 
         end_str = c.get("couponValidEndTime")
         if end_str:
@@ -785,7 +943,9 @@ def print_summary_stats(all_coupons: list[dict[str, Any]]):
     console.print(type_table)
 
 
-# ── 主入口 ──────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# 主入口
+# ═══════════════════════════════════════════════════════════════
 def main():
     parser = argparse.ArgumentParser(
         description="立创商城优惠券数据浏览与比较工具",
@@ -800,7 +960,10 @@ def main():
   python coupons.py --combo                   # [实验性] 10 张券叠加模拟
   python coupons.py --diff                    # 与上次对比变化
   python coupons.py --export data.csv         # 导出 CSV
+  python coupons.py --export-json data.json   # 导出 JSON
+  python coupons.py --export-markdown data.md # 导出 Markdown
   python coupons.py --refresh                 # 从立创 API 拉取最新数据
+  python coupons.py --refresh --yes           # 非交互式刷新（用于 CI）
   python coupons.py --max-age-hr 48           # 48 小时内不提示更新
         """,
     )
@@ -818,6 +981,12 @@ def main():
                         help="与上次运行对比变化")
     parser.add_argument("--export", type=str, default=None, metavar="FILE",
                         help="导出全部数据为 CSV")
+    parser.add_argument("--export-json", type=str, default=None, metavar="FILE",
+                        help="导出全部数据为 JSON")
+    parser.add_argument("--export-markdown", type=str, default=None, metavar="FILE",
+                        help="导出折扣率排行前50为 Markdown 表格")
+    parser.add_argument("--yes", action="store_true",
+                        help="非交互模式，所有询问默认否")
     parser.add_argument("--no-cache", action="store_true",
                         help="忽略 5 分钟临时缓存")
     parser.add_argument("--refresh", action="store_true",
@@ -826,6 +995,8 @@ def main():
                         help="本地数据过期阈值（小时），默认 24")
     parser.add_argument("--top", type=int, nargs="?", const=20, default=None,
                         help="仅显示折扣率排行榜 (默认 20 名)")
+    parser.add_argument("--quiet", "-q", action="store_true",
+                        help="静默模式（不打印欢迎头、免责声明、底部提示等）")
     parser.add_argument("--version", action="store_true",
                         help="显示版本信息")
     parser.add_argument("--stats", action="store_true",
@@ -836,6 +1007,25 @@ def main():
     if args.version:
         console.print(f"[bold]szlcsc-coupons[/] [dim]v{__version__}[/]")
         return
+
+    global _NON_INTERACTIVE, _QUIET
+    if args.yes:
+        _NON_INTERACTIVE = True
+    if args.quiet:
+        _QUIET = True
+
+    if args.brand is not None and args.brand == "":
+        console.print("[yellow]⚠ --brand 值为空字符串，将跳过过滤。[/]")
+
+    if args.combo is not None and args.combo is not _UNLIMITED and args.combo <= 0:
+        console.print("[red]❌ 预算必须大于 0。[/]")
+        sys.exit(1)
+
+    if args.min_rate > 100:
+        console.print(f"[yellow]⚠ --min-rate 最高为 100，你传入 {args.min_rate}，过滤类命令将无券可匹配。[/]")
+    elif args.min_rate < 0:
+        console.print("[red]❌ --min-rate 不能为负数。[/]")
+        sys.exit(1)
 
     # ── 加载数据 ──
     if args.refresh:
@@ -859,31 +1049,32 @@ def main():
         console.print("[red]❌ 未获取到优惠券数据，请稍后重试。[/]")
         sys.exit(1)
 
-    # ── 免责声明 ──
-    console.print()
-    console.print(Panel(
-        "[bold yellow]⚠ 第三方工具声明[/]\n"
-        "本工具是个人开发的立创商城优惠券数据分析工具，与立创商城（szlcsc.com）无任何关联。\n"
-        "数据来源于 activity.szlcsc.com 公开 API。\n"
-        "\n"
-        "推荐个人电子爱好者为学习研究使用。\n"
-        "不推荐集体/公司/组织使用——小额券对组织价值不大，大额券价格亦常高于其他渠道。\n"
-        "\n"
-        "请遵守立创商城服务条款，合理控制请求频率。",
-        border_style="yellow",
-        padding=(1, 2),
-    ))
+    if not args.quiet:
+        # ── 免责声明 ──
+        console.print()
+        console.print(Panel(
+            "[bold yellow]⚠ 第三方工具声明[/]\n"
+            "本工具是个人开发的立创商城优惠券数据分析工具，与立创商城（szlcsc.com）无任何关联。\n"
+            "数据来源于 activity.szlcsc.com 公开 API。\n"
+            "\n"
+            "推荐个人电子爱好者为学习研究使用。\n"
+            "不推荐集体/公司/组织使用——小额券对组织价值不大，大额券价格亦常高于其他渠道。\n"
+            "\n"
+            "请遵守立创商城服务条款，合理控制请求频率。",
+            border_style="yellow",
+            padding=(1, 2),
+        ))
 
-    # ── 欢迎 ──
-    dt = datetime.now().strftime("%Y-%m-%d %H:%M")
-    header = Panel(
-        f"[bold white]📋 立创商城优惠券数据浏览[/]    "
-        f"[dim]{len(all_coupons)} 张券 | {dt}[/]",
-        border_style="#199FE9",
-        padding=(1, 2),
-    )
-    console.print()
-    console.print(header)
+        # ── 欢迎 ──
+        dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+        header = Panel(
+            f"[bold white]📋 立创商城优惠券数据浏览[/]    "
+            f"[dim]{len(all_coupons)} 张券 | {dt}[/]",
+            border_style="#199FE9",
+            padding=(1, 2),
+        )
+        console.print()
+        console.print(header)
 
     # ── 执行动作 ──
     if args.stats:
@@ -895,7 +1086,27 @@ def main():
         return
 
     if args.export:
-        export_csv(all_coupons, args.export)
+        try:
+            export_csv(all_coupons, args.export)
+        except (OSError, PermissionError) as e:
+            console.print(f"[red]❌ 导出失败: {e}[/]")
+            sys.exit(1)
+        return
+
+    if args.export_json:
+        try:
+            export_json(all_coupons, args.export_json)
+        except (OSError, PermissionError) as e:
+            console.print(f"[red]❌ 导出失败: {e}[/]")
+            sys.exit(1)
+        return
+
+    if args.export_markdown:
+        try:
+            export_markdown(all_coupons, args.export_markdown)
+        except (OSError, PermissionError) as e:
+            console.print(f"[red]❌ 导出失败: {e}[/]")
+            sys.exit(1)
         return
 
     if args.combo is not None:
@@ -904,50 +1115,53 @@ def main():
         return
 
     if args.section:
+        section_names = get_all_section_names(groups)
         # 按专区ID或名称关键词筛选
-        sec_id = None
         try:
-            sec_id = int(args.section)
+            sec_ids = [int(args.section)]
         except ValueError:
             query = args.section.lower()
-            for sid, sname in SECTION_NAMES.items():
-                if query in sname.lower():
-                    sec_id = sid
-                    break
-        if sec_id is not None and sec_id in groups:
-            name = SECTION_NAMES.get(sec_id, f"专区 {sec_id}")
-            table = build_section_table(
-                groups[sec_id], name, args.sort, args.min_rate, args.brand
-            )
-            if table:
-                console.print(table)
-            else:
-                console.print("[yellow]⚠ 该专区无匹配的优惠券。[/]")
-        else:
+            sec_ids = [
+                sid for sid, sname in section_names.items()
+                if query in sname.lower()
+            ]
+        matched = [sid for sid in sec_ids if sid in groups]
+        if not matched:
             console.print(f"[red]❌ 未找到专区: {args.section}[/]")
-            console.print(f"  可用专区: {', '.join(f'{k}={v}' for k, v in SECTION_NAMES.items())}")
+            console.print(f"  可用专区: {', '.join(f'{k}={v}' for k, v in section_names.items())}")
+        else:
+            for sec_id in matched:
+                name = get_section_name(sec_id, samples=groups.get(sec_id))
+                table = build_section_table(
+                    groups[sec_id], name, args.sort, args.min_rate, args.brand
+                )
+                if table:
+                    console.print(table)
+                else:
+                    console.print(f"[yellow]⚠ 专区「{name}」无匹配的优惠券。[/]")
         return
 
     # ── 默认: 打印所有专区 ──
     if args.top is not None:
         console.print()
-        print_best_value_ranking(all_coupons, top_n=args.top)
+        print_best_value_ranking(all_coupons, top_n=args.top, min_rate=args.min_rate, brand_filter=args.brand)
     else:
         print_all_sections(groups, args.sort, args.min_rate, args.brand)
 
         if args.min_rate == 0 and args.brand is None:
             console.print()
-            console.print("─" * console.width)
+            console.print("─" * (console.width or 80))
             print_best_value_ranking(all_coupons, top_n=20)
 
-    # 底部提示
-    tips = Text()
-    tips.append("\n💡 ", style="dim")
-    tips.append("提示: 使用 ", style="dim")
-    tips.append("python coupons.py --help", style="bold cyan")
-    tips.append(" 查看全部功能", style="dim")
-    console.print(tips)
-    console.print()
+    if not args.quiet:
+        # 底部提示
+        tips = Text()
+        tips.append("\n💡 ", style="dim")
+        tips.append("提示: 使用 ", style="dim")
+        tips.append("python coupons.py --help", style="bold cyan")
+        tips.append(" 查看全部功能", style="dim")
+        console.print(tips)
+        console.print()
 
 
 if __name__ == "__main__":

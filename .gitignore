@@ -1,7 +1,6 @@
 # Cache
 .coupon_cache.json
 .coupon_history.json
-latest_data.json
 
 # Exports (但保留仓库跟踪的 data.csv)
 *.csv

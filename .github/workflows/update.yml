@@ -2,8 +2,8 @@ name: Daily Coupon Data
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # 每天 UTC 02:00 (北京时间 10:00)
-  workflow_dispatch:      # 支持手动触发
+    - cron: '45 15 * * *'   # 每天 UTC 15:45 (北京时间 23:45)
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,13 +21,18 @@ jobs:
       - name: Install dependencies
         run: pip install rich
 
-      - name: Fetch and save latest data
-        run: python coupons.py --refresh --diff
+      - name: Fetch latest data
+        run: python coupons.py --refresh --yes
         env:
           PYTHONIOENCODING: utf-8
 
       - name: Export CSV
-        run: python coupons.py --refresh --export data.csv
+        run: python coupons.py --export data.csv --yes
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Save diff history
+        run: python coupons.py --diff --yes
         env:
           PYTHONIOENCODING: utf-8
 
