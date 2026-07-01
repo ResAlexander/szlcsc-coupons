@@ -32,7 +32,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 _UNLIMITED = object()
 _NON_INTERACTIVE = False
 _QUIET = False
