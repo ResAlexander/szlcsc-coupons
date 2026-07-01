@@ -28,7 +28,7 @@
 
 [^1]: 只是一般而言，具体数量会随时间和官方政策变化。
 
-本工具将这些公开数据按专区分组展示，帮助个人爱好者快速浏览和比较，进而找到适合自己的券。
+为了帮助个人爱好者找到适合自己的券，当然同时也是性价比较高的，因此我开发了这个工具。
 
 ---
 
@@ -53,9 +53,9 @@
 [^2]: 你可以将csv和自己的需求丢给ai，便于选择合适的优惠券。我以后更新的话应该会朝着这个方向更新。
 
 ### 🎨 视觉反馈
+- 分类 + 格式化表格
 - 折扣率颜色编码：![](https://img.shields.io/badge/≥90%25-brightgreen?style=flat-square) · ![](https://img.shields.io/badge/≥70%25-success?style=flat-square) · ![](https://img.shields.io/badge/≥50%25-yellow?style=flat-square) · ![](https://img.shields.io/badge/≥30%25-cyan?style=flat-square)
 - 已领人数着色：![](https://img.shields.io/badge/≥1w-red?style=flat-square) · ![](https://img.shields.io/badge/≥1k-yellow?style=flat-square)
-- 分类 + 格式化表格
 
 ---
 
@@ -118,8 +118,8 @@ python coupons.py --min-rate 80
 # 自动选最高折扣率的 10 张券，模拟叠加效果
 python coupons.py --combo
 
-# 带预算模拟：¥100 预算能买多少？
-python coupons.py --combo 100
+# 预算模拟：¥111 预算能买多少？
+python coupons.py --combo 111
 ```
 
 <details>
@@ -148,7 +148,8 @@ python coupons.py --combo 100
 python coupons.py --diff
 ```
 
-显示新增券、已下架券、已领数量的环比变化。适合定期查看新上架的优惠券。
+显示新增券、已下架券、已领数量与上次检查的变化。
+适合定期查看新上架的优惠券。
 
 
 ---
