@@ -814,7 +814,7 @@ def export_json(coupons: list[dict[str, Any]], filepath: str):
 
 
 def export_markdown(coupons: list[dict[str, Any]], filepath: str):
-    """导出折扣率排行前50为 Markdown 表格"""
+    """导出全部数据为 Markdown 表格"""
     scored = []
     for c in coupons:
         rate = compute_discount_rate(c)
@@ -825,12 +825,12 @@ def export_markdown(coupons: list[dict[str, Any]], filepath: str):
     lines = [
         "# 立创商城优惠券列表",
         "",
-        f"共 {len(coupons)} 张券，以下为折扣率排行前 50：",
+        f"共 {len(coupons)} 张券：",
         "",
         "| # | 优惠券名称 | 折扣率 | 已领 | 门槛 | 面额 | 类型 |",
         "|---|-----------|--------|------|------|------|------|",
     ]
-    for idx, (rate, received, c) in enumerate(scored[:50], 1):
+    for idx, (rate, received, c) in enumerate(scored, 1):
         name = c.get("couponName", "-")
         amount = c.get("couponAmount") or 0
         threshold = c.get("minOrderMoney") or 0
@@ -959,10 +959,10 @@ def main():
   python coupons.py --brand 捷而瑞             # 按品牌名搜索（支持部分匹配），仅显示该品牌
   python coupons.py --combo                   # [实验性] 10 张券叠加模拟
   python coupons.py --diff                    # 与上次对比变化
-   python coupons.py --export data.csv         # 导出 CSV（--export 等价于 --export-csv）
-   python coupons.py --export-csv data.csv     # 导出 CSV
-   python coupons.py --export-json data.json   # 导出 JSON
-   python coupons.py --export-md data.md       # 导出 Markdown
+   python coupons.py --export /path/to/data.csv         # 导出 CSV（--export 等价于 --export-csv）
+   python coupons.py --export-csv /path/to/data.csv     # 导出 CSV
+   python coupons.py --export-json /path/to/data.json   # 导出 JSON
+   python coupons.py --export-md /path/to/data.md       # 导出 Markdown
   python coupons.py --refresh                 # 从立创 API 拉取最新数据
   python coupons.py --refresh --yes           # 非交互式刷新（用于 CI）
   python coupons.py --max-age-hr 48           # 48 小时内不提示更新
@@ -980,14 +980,14 @@ def main():
                         help="[实验性] N 张券叠加模拟（可选预算金额，如 --combo 100）")
     parser.add_argument("--diff", action="store_true",
                         help="与上次运行对比变化")
-    parser.add_argument("--export", type=str, default=None, metavar="FILE",
+    parser.add_argument("--export", type=str, default=None, metavar="PATH",
                         dest="export_csv", help="导出全部数据为 CSV（等价于 --export-csv）")
-    parser.add_argument("--export-csv", type=str, default=None, metavar="FILE",
+    parser.add_argument("--export-csv", type=str, default=None, metavar="PATH",
                         dest="export_csv", help="导出全部数据为 CSV")
-    parser.add_argument("--export-json", type=str, default=None, metavar="FILE",
+    parser.add_argument("--export-json", type=str, default=None, metavar="PATH",
                         help="导出全部数据为 JSON")
-    parser.add_argument("--export-md", type=str, default=None, metavar="FILE",
-                        help="导出折扣率排行前50为 Markdown 表格")
+    parser.add_argument("--export-md", type=str, default=None, metavar="PATH",
+                        help="导出全部数据为 Markdown 表格")
     parser.add_argument("--yes", action="store_true",
                         help="非交互模式，所有询问默认否")
     parser.add_argument("--no-cache", action="store_true",

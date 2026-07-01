@@ -7,7 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `--yes` / `--non-interactive` flag for CI / automated usage
 - `--export-json FILE` — export all coupons as JSON
-- `--export-md FILE` — export top 50 discount rate coupons as Markdown
+- `--export-md PATH` — export all coupons as Markdown (not limited to top 50)
+- All export flags use `PATH` metavar (was `FILE`) to clarify full path is required
 - `--quiet` / `-q` — suppress banner, disclaimer, source line, and bottom tips
 - `requirements-lock.txt` — pinned dependency versions for reproducible installs
 - `latest_data.json` now tracked in git (removed from `.gitignore`) for reliable `--diff`

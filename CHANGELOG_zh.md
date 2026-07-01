@@ -5,7 +5,8 @@
 ### 新增
 - `--yes` / `--non-interactive` 标志，用于 CI / 自动化脚本
 - `--export-json FILE` — 导出全部优惠券为 JSON
-- `--export-md FILE` — 导出折扣率排行前 50 为 Markdown 表格
+- `--export-md PATH` — 导出全部数据为 Markdown 表格（不再限于前 50）
+- 所有 export 标志的 metavar 从 `FILE` 改为 `PATH`，明确需要提供完整路径
 - `--quiet` / `-q` — 静默模式，不打印欢迎头、免责声明、来源行、底部提示
 - `requirements-lock.txt` — 锁定依赖版本，支持可复现安装
 - `latest_data.json` 现受 git 跟踪（已从 `.gitignore` 移除），保证 `--diff` 正常工作
