@@ -202,3 +202,15 @@ python coupons.py --diff
 </p>
 
 MIT License — 详见 `LICENSE` 文件
+
+--
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=resalexander%2Fszlcsc-coupons&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=resalexander/szlcsc-coupons&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=resalexander/szlcsc-coupons&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=resalexander/szlcsc-coupons&type=date&legend=top-left" />
+ </picture>
+</a>
