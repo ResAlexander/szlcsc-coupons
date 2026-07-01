@@ -5,7 +5,7 @@
 ### 新增
 - `--yes` / `--non-interactive` 标志，用于 CI / 自动化脚本
 - `--export-json FILE` — 导出全部优惠券为 JSON
-- `--export-markdown FILE` — 导出折扣率排行前 50 为 Markdown 表格
+- `--export-md FILE` — 导出折扣率排行前 50 为 Markdown 表格
 - `--quiet` / `-q` — 静默模式，不打印欢迎头、免责声明、来源行、底部提示
 - `requirements-lock.txt` — 锁定依赖版本，支持可复现安装
 - `latest_data.json` 现受 git 跟踪（已从 `.gitignore` 移除），保证 `--diff` 正常工作
@@ -20,7 +20,7 @@
 - `print_diff()` 错误处理拆分为 `FileNotFoundError`、`json.JSONDecodeError`、`OSError`，分别给出明确消息
 - `_save_history()` 添加 try/except 保护，防止不可写路径导致崩溃
 - `format_amount()` 处理缺失或为零的 `couponDiscount`，不再显示 "0折"
-- 所有导出路径（`--export`、`--export-json`、`--export-markdown`）捕获 `OSError`/`PermissionError`
+- 所有导出路径（`--export`、`--export-csv`、`--export-json`、`--export-md`）捕获 `OSError`/`PermissionError`
 - `parse_coupons()` 增加对非 dict 类型的 `couponModelVOListMap` 的防护
 - `_git_pull_data()` 在失败时输出 stderr 详细信息
 - `--quiet` 模式下自动跳过数据过期询问

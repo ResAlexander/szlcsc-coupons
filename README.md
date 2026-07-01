@@ -46,9 +46,10 @@
 | `🧪 python coupons.py --combo 100` | 带预算模拟（¥100 预算能买多少？） <br><i style="color:darkred">[实验性]</i> |
 | `📈 python coupons.py --stats` | 汇总统计（券总数、有效期、类型分布） |
 | `🔄 python coupons.py --diff` | 对比上次运行，看新增/下架/数量波动 |
-| `📦 python coupons.py --export data.csv` | 导出全部数据为 CSV[^2] |
+| `📦 python coupons.py --export data.csv` | 导出全部数据为 CSV（等价于 --export-csv）[^2] |
+| `📦 python coupons.py --export-csv data.csv` | 导出全部数据为 CSV |
 | `📦 python coupons.py --export-json data.json` | 导出全部数据为 JSON |
-| `📦 python coupons.py --export-markdown data.md` | 导出折扣率排行前 50 为 Markdown 表格 |
+| `📦 python coupons.py --export-md data.md` | 导出折扣率排行前 50 为 Markdown 表格 |
 | `🔄 python coupons.py --refresh` | 从立创 API 重新拉取最新数据 |
 | `🔄 python coupons.py --refresh --yes` | 非交互式刷新（用于 CI 定时任务） |
 | `🤫 python coupons.py --quiet` | 静默模式，不打印欢迎头、免责声明、底部提示 |

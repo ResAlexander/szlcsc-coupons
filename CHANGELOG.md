@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `--yes` / `--non-interactive` flag for CI / automated usage
 - `--export-json FILE` — export all coupons as JSON
-- `--export-markdown FILE` — export top 50 discount rate coupons as Markdown
+- `--export-md FILE` — export top 50 discount rate coupons as Markdown
 - `--quiet` / `-q` — suppress banner, disclaimer, source line, and bottom tips
 - `requirements-lock.txt` — pinned dependency versions for reproducible installs
 - `latest_data.json` now tracked in git (removed from `.gitignore`) for reliable `--diff`
@@ -22,7 +22,7 @@ All notable changes to this project will be documented in this file.
 - `print_diff()` error handling split into `FileNotFoundError`, `json.JSONDecodeError`, `OSError` with distinct messages
 - `_save_history()` wrapped in try/except to prevent crashes on unwritable paths
 - `format_amount()` handles missing or zero `couponDiscount` without showing "0折"
-- All export paths (`--export`, `--export-json`, `--export-markdown`) catch `OSError`/`PermissionError`
+- All export paths (`--export`, `--export-csv`, `--export-json`, `--export-md`) catch `OSError`/`PermissionError`
 - `parse_coupons()` guards against non-dict `couponModelVOListMap` values
 - `_git_pull_data()` outputs stderr details on failure
 - Data expired prompt skipped automatically in `--quiet` mode

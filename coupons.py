@@ -959,9 +959,10 @@ def main():
   python coupons.py --brand 捷而瑞             # 按品牌名搜索（支持部分匹配），仅显示该品牌
   python coupons.py --combo                   # [实验性] 10 张券叠加模拟
   python coupons.py --diff                    # 与上次对比变化
-  python coupons.py --export data.csv         # 导出 CSV
-  python coupons.py --export-json data.json   # 导出 JSON
-  python coupons.py --export-markdown data.md # 导出 Markdown
+   python coupons.py --export data.csv         # 导出 CSV（--export 等价于 --export-csv）
+   python coupons.py --export-csv data.csv     # 导出 CSV
+   python coupons.py --export-json data.json   # 导出 JSON
+   python coupons.py --export-md data.md       # 导出 Markdown
   python coupons.py --refresh                 # 从立创 API 拉取最新数据
   python coupons.py --refresh --yes           # 非交互式刷新（用于 CI）
   python coupons.py --max-age-hr 48           # 48 小时内不提示更新
@@ -980,10 +981,12 @@ def main():
     parser.add_argument("--diff", action="store_true",
                         help="与上次运行对比变化")
     parser.add_argument("--export", type=str, default=None, metavar="FILE",
-                        help="导出全部数据为 CSV")
+                        dest="export_csv", help="导出全部数据为 CSV（等价于 --export-csv）")
+    parser.add_argument("--export-csv", type=str, default=None, metavar="FILE",
+                        dest="export_csv", help="导出全部数据为 CSV")
     parser.add_argument("--export-json", type=str, default=None, metavar="FILE",
                         help="导出全部数据为 JSON")
-    parser.add_argument("--export-markdown", type=str, default=None, metavar="FILE",
+    parser.add_argument("--export-md", type=str, default=None, metavar="FILE",
                         help="导出折扣率排行前50为 Markdown 表格")
     parser.add_argument("--yes", action="store_true",
                         help="非交互模式，所有询问默认否")
@@ -1085,9 +1088,9 @@ def main():
         print_diff(all_coupons)
         return
 
-    if args.export:
+    if args.export_csv:
         try:
-            export_csv(all_coupons, args.export)
+            export_csv(all_coupons, args.export_csv)
         except (OSError, PermissionError) as e:
             console.print(f"[red]❌ 导出失败: {e}[/]")
             sys.exit(1)
@@ -1101,9 +1104,9 @@ def main():
             sys.exit(1)
         return
 
-    if args.export_markdown:
+    if args.export_md:
         try:
-            export_markdown(all_coupons, args.export_markdown)
+            export_markdown(all_coupons, args.export_md)
         except (OSError, PermissionError) as e:
             console.print(f"[red]❌ 导出失败: {e}[/]")
             sys.exit(1)
