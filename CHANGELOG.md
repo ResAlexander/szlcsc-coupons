@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-07-08
+
+### Fixed
+- CI `.gitignore` contained `.coupon_history.json` (untracked + gitignored), causing `git add` to exit 1 and blocking the entire commit step — `data.csv` never got pushed to the repo
+
+### Chores
+- Remove `.coupon_history.json` from `.gitignore` and re-track it; `git add` now succeeds and the daily workflow pushes commits again
+
 ## [1.1.0] - 2026-07-01
 
 ### Added

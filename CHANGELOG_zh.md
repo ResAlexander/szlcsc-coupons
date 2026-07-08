@@ -1,5 +1,13 @@
 # 更新日志
 
+## [1.1.3] - 2026-07-08
+
+### 修复
+- CI 的 `.gitignore` 中包含了 `.coupon_history.json`（既被 gitignore 又未被跟踪），导致 `git add` 返回 exit code 1，整个提交步骤终止，`data.csv` 无法被推送至仓库
+
+### 杂项
+- 将 `.coupon_history.json` 从 `.gitignore` 中移除并重新跟踪；`git add` 现在正常执行，每日 workflow 恢复自动提交
+
 ## [1.1.0] - 2026-07-01
 
 ### 新增
